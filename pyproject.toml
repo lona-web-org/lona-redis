@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+version = "0.0"
+name = "lona-redis"
+description = ""
+
+authors = [
+  { name="Florian Scherf", email="mail@florianscherf.de" },
+]
+
+license = { file="LICENSE.txt" }
+readme = "README.md"
+
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+requires-python = ">=3.7"
+
+dependencies = [
+  "lona",
+]
+
+
+[project.optional-dependencies]
+packaging = [
+  "build",
+  "twine",
+]
+
+testing = [
+  "tox",
+  "coverage==7.1.0",
+  "pytest==7.2.1",
+]
+
+
+[project.urls]
+"Homepage" = "https://github.com/lona-web-org/lona-redis"
+"Repository" = "https://github.com/lona-web-org/lona-redis"
+"Bug Tracker" = "https://github.com/lona-web-org/lona-redis/issues"
+
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["lona_redis*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = [
+  ".*",
+  "~*",
+  "*.swp",
+  "*.pyc",
+]
