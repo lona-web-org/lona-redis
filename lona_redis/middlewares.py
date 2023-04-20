@@ -22,11 +22,12 @@ class RedisSession:
         # FIXME suggest to pass kwargs through to redis.Redis
         self.r = redis.Redis(**kwargs)
 
-    def _actual_redis_key(self, user_key):
+    def redis_key(self, user_key):
         """
         combine self.user_request_session_key with user's key
         so that the ACTUAL key used to store value in Redis is unique
         """
+
         COMBINE_CHR = ":"
         return self.user_request_session_key + COMBINE_CHR + user_key
 
@@ -37,8 +38,9 @@ class RedisSession:
 
         pickle all values so that Redis can store any pickle-able Python value
         """
+
         for user_key, value in kwargs.items():
-            actual_redis_key = self._actual_redis_key(user_key)
+            actual_redis_key = self.redis_key(user_key)
             self.r.set(actual_redis_key, pickle.dumps(value))
 
     # def get(self, *args, **kwargs):
@@ -51,9 +53,19 @@ class RedisSession:
 
         un-pickle all values that were retrieved from Redis
         """
-        user_key = args[0]
-        actual_redis_key = self._actual_redis_key(user_key)
-        return pickle.loads(self.r.get(actual_redis_key))
+        if len(args) == 1:
+            user_key = args[0]
+            actual_redis_key = self.redis_key(user_key)
+            return pickle.loads(self.r.get(actual_redis_key))
+
+        else:
+            values = ()
+            for user_key in args:
+                actual_redis_key = self.redis_key(user_key)
+                value = pickle.loads(self.r.get(actual_redis_key))
+                values = values + (value,)
+
+            return values
 
 
 # FIXME this isn't used - can be removed?
