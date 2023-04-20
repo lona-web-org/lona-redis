@@ -14,13 +14,12 @@ class RedisSession:
         initalize redis.Redis()
 
         https://redis.readthedocs.io/en/latest/#quickly-connecting-to-redis
-        https://redis.readthedocs.io/en/latest/examples/connection_examples.html
 
-        there are many many kwargs:
+        but there are many many kwargs:
         https://redis.readthedocs.io/en/latest/connections.html
         """
 
-        # FIXME pass kwargs straight through to redis.Redis?
+        # FIXME suggest to pass kwargs through to redis.Redis
         self.r = redis.Redis(**kwargs)
 
     def _actual_redis_key(self, user_key):
@@ -40,7 +39,6 @@ class RedisSession:
         """
         for user_key, value in kwargs.items():
             actual_redis_key = self._actual_redis_key(user_key)
-            # logger.debug(f"{user_key=} {actual_redis_key=} {value=}")
             self.r.set(actual_redis_key, pickle.dumps(value))
 
     # def get(self, *args, **kwargs):
@@ -55,20 +53,18 @@ class RedisSession:
         """
         user_key = args[0]
         actual_redis_key = self._actual_redis_key(user_key)
-        # logger.debug(f"{user_key=} {actual_redis_key=}")
-
         return pickle.loads(self.r.get(actual_redis_key))
 
 
 # FIXME this isn't used - can be removed?
-class RedisUser:
-    def __init__(self, connection):
-        # self.connection = connection
-        # self.session = RedisSession(self)
-        pass
-
-    def __eq__(self, other):
-        raise NotImplementedError()
+# class RedisUser:
+#    def __init__(self, connection):
+#        # self.connection = connection
+#        # self.session = RedisSession(self)
+#        pass
+#
+#    def __eq__(self, other):
+#        raise NotImplementedError()
 
 
 class RedisSessionMiddleware:
@@ -79,31 +75,31 @@ class RedisSessionMiddleware:
 
         settings = data.server.settings
 
-        # FIXME
-        # TODO what should the settings be?
-        # TODO there are many kwargs (https://redis.readthedocs.io/en/latest/connections.html)
-        # TODO maybe settings should be a dict to override the defaults?
+        # FIXME how to set Redis connection settings?
+        # there are many many kwargs (https://redis.readthedocs.io/en/latest/connections.html)
+        # FIXME maybe settings should be a dict instead
 
         # logger.debug(f"{settings.REDIS_USER=}")
         # logger.debug(f"{settings.REDIS_PASSWORD=}")
 
-        # default args
-        # self.redis_session = RedisSession(host="localhost", port=6379, db=0)
+        # common setting, using default args (ie. host="localhost", port=6379, db=0)
+        # self.redis_session = RedisSession()
 
-        # FIXME pass kwargs (see above)
-        self.redis_session = RedisSession()
+        # FIXME suggested way to pass & use Redis connection settings
+        # logger.debug(f"{settings.REDIS_CONNECTION=}")
+        self.redis_session = RedisSession(**settings.REDIS_CONNECTION)
 
-        # to be set in handle_request()
+        # initalize this here, but to be set in handle_request()
         # just prior to user calling request.user.session.get(), request.user.session.set()
         self.user_request_session_key = None
 
         return data
 
-    def handle_connection(self, data):
-        # connection.user = RedisUser(data.connection)
-        # logger.debug(f"{dir(data.connection)=}")
-
-        return data
+    # FIXME this isn't used - can be removed?
+    # def handle_connection(self, data):
+    #    # connection.user = RedisUser(data.connection)
+    #
+    #    return data
 
     def handle_request(self, data):
         request = data.request

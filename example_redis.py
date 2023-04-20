@@ -10,6 +10,9 @@ from lona.html import H1, HTML, P
 from loguru import logger
 
 
+# NOTE start Redis before starting this lona script
+# docker run -p 6379:6379 -it redis:latest --requirepass "abcd1234"
+
 app = App(__file__)
 
 app.settings.SESSIONS = True
@@ -17,8 +20,12 @@ app.settings.MIDDLEWARES = [
     "lona_redis.middlewares.RedisSessionMiddleware",
 ]
 
-app.settings.REDIS_USER = "some_redis_user"
-app.settings.REDIS_PASSWORD = "abcd1234"
+# app.settings.REDIS_USER = "some_redis_user"
+# app.settings.REDIS_PASSWORD = "abcd1234"
+
+# FIXME suggested way to pass Redis connection settings
+# there are many many kwargs: https://redis.readthedocs.io/en/latest/connections.html
+app.settings.REDIS_CONNECTION = {"password": "abcd1234"}
 
 
 @app.route("/")
@@ -34,6 +41,8 @@ class Index(View):
         # request.user.session.set(foo=foo)
         # foo = request.user.session.get("foo")
         # logger.debug(f"{foo=}")
+
+        # NOTE example of getting the actual redis key given user's key
         # logger.debug(f"{request.user.session._actual_redis_key('foo')=}")
 
         request.user.session.set(str_var="hello world")
