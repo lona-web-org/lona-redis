@@ -39,7 +39,10 @@ class Index(View):
         #
 
         # NOTE set single value
-        request.user.session.set(foo=999)
+        # request.user.session.set(foo=999)
+        request.user.session.set("foo", 999)
+        # testing throw error
+        # request.user.session.set("foo", 999, 345)
 
         # NOTE get single value
         foo = request.user.session.get("foo")
@@ -75,7 +78,7 @@ class Index(View):
             mixed_var_2={
                 "a": [1, 2, 3],
                 "b": {"a": 1, "b": 2},
-                "c": (4,5,6),
+                "c": (4, 5, 6),
             }
         )
 

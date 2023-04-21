@@ -1,6 +1,8 @@
 import pickle
+import sys
 
 import redis
+# FIXME remove this
 from loguru import logger
 
 
@@ -34,12 +36,27 @@ class RedisSession:
     def set(self, *args, **kwargs):
         """
         user should call this to easily set values
-        eg. request.user.session.set(foo=123)
+        eg. request.user.session.set("foo",123)
+        or
+        eg. request.user.session.set(foo=123, bar="hello")
 
         pickle all values so that Redis can store any pickle-able Python value
         """
 
+        if len(args) > 0:
+            # eg. request.user.session.set("foo",123)
+            if len(args) != 2:
+                class_name = self.__class__.__name__
+                function_name = sys._getframe().f_code.co_name
+                raise TypeError(
+                    f"{__name__}.{class_name}.{function_name} expected 2 arguments, got {len(args)}"
+                )
+            else:
+                actual_redis_key = self.redis_key(args[0])
+                self.r.set(actual_redis_key, pickle.dumps(args[1]))
+
         for user_key, value in kwargs.items():
+            # eg. request.user.session.set(foo=123, bar="hello")
             actual_redis_key = self.redis_key(user_key)
             self.r.set(actual_redis_key, pickle.dumps(value))
 
@@ -50,15 +67,20 @@ class RedisSession:
         """
         user should call this to easily get values
         eg. request.user.session.get("foo")
+        or
+        eg. request.user.session.get("foo", "bar", "baz")
+            return tuple of values
 
         un-pickle all values that were retrieved from Redis
         """
         if len(args) == 1:
+            # eg. request.user.session.get("foo")
             user_key = args[0]
             actual_redis_key = self.redis_key(user_key)
             return pickle.loads(self.r.get(actual_redis_key))
 
         else:
+            # eg. request.user.session.get("foo", "bar", "baz")
             values = ()
             for user_key in args:
                 actual_redis_key = self.redis_key(user_key)
@@ -91,6 +113,7 @@ class RedisSessionMiddleware:
         # there are many many kwargs (https://redis.readthedocs.io/en/latest/connections.html)
         # FIXME maybe settings should be a dict instead
 
+        # FIXME remove this
         # logger.debug(f"{settings.REDIS_USER=}")
         # logger.debug(f"{settings.REDIS_PASSWORD=}")
 
