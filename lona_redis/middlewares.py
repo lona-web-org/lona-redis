@@ -2,8 +2,6 @@ import pickle
 import sys
 
 import redis
-# FIXME remove this
-from loguru import logger
 
 
 class RedisSession:
@@ -17,11 +15,11 @@ class RedisSession:
 
         https://redis.readthedocs.io/en/latest/#quickly-connecting-to-redis
 
-        but there are many many kwargs:
-        https://redis.readthedocs.io/en/latest/connections.html
+        pass through all kwargs to redis-py
+        kwargs:
+            https://redis.readthedocs.io/en/latest/connections.html
         """
 
-        # FIXME suggest to pass kwargs through to redis.Redis
         self.r = redis.Redis(**kwargs)
 
     def redis_key(self, user_key):
@@ -36,58 +34,61 @@ class RedisSession:
     def set(self, *args, **kwargs):
         """
         user should call this to easily set values
-        eg. request.user.session.set("foo",123)
-        or
-        eg. request.user.session.set(foo=123, bar="hello")
-
+            eg. request.user.session.set("foo",123)
         pickle all values so that Redis can store any pickle-able Python value
+
+        pass through all kwargs to redis-py .set()
+        kwargs:
+            https://redis.readthedocs.io/en/latest/commands.html#redis.commands.core.CoreCommands.set
         """
 
-        if len(args) > 0:
-            # eg. request.user.session.set("foo",123)
-            if len(args) != 2:
-                class_name = self.__class__.__name__
-                function_name = sys._getframe().f_code.co_name
-                raise TypeError(
-                    f"{__name__}.{class_name}.{function_name} expected 2 arguments, got {len(args)}"
-                )
-            else:
-                actual_redis_key = self.redis_key(args[0])
-                self.r.set(actual_redis_key, pickle.dumps(args[1]))
+        if len(args) == 2:
+            redis_key = self.redis_key(args[0])
+            value = pickle.dumps(args[1])
 
-        for user_key, value in kwargs.items():
-            # eg. request.user.session.set(foo=123, bar="hello")
-            actual_redis_key = self.redis_key(user_key)
-            self.r.set(actual_redis_key, pickle.dumps(value))
+            self.r.set(redis_key, value, **kwargs)
 
-    # def get(self, *args, **kwargs):
-    #    raise NotImplementedError()
+        else:
+            class_name = self.__class__.__name__
+            function_name = sys._getframe().f_code.co_name
+            raise TypeError(
+                f"{__name__}.{class_name}.{function_name} expected 2 arguments, got {len(args)}"
+            )
 
     def get(self, *args):
         """
         user should call this to easily get values
-        eg. request.user.session.get("foo")
-        or
-        eg. request.user.session.get("foo", "bar", "baz")
-            return tuple of values
-
+            eg. request.user.session.get("foo")
         un-pickle all values that were retrieved from Redis
+
+        if key does not exist, return None
         """
+
         if len(args) == 1:
-            # eg. request.user.session.get("foo")
             user_key = args[0]
-            actual_redis_key = self.redis_key(user_key)
-            return pickle.loads(self.r.get(actual_redis_key))
+            if self.exists(user_key):
+                redis_key = self.redis_key(user_key)
+                return pickle.loads(self.r.get(redis_key))
+            else:
+                return None
 
         else:
-            # eg. request.user.session.get("foo", "bar", "baz")
-            values = ()
-            for user_key in args:
-                actual_redis_key = self.redis_key(user_key)
-                value = pickle.loads(self.r.get(actual_redis_key))
-                values = values + (value,)
+            class_name = self.__class__.__name__
+            function_name = sys._getframe().f_code.co_name
+            raise TypeError(
+                f"{__name__}.{class_name}.{function_name} expected 1 argument, got {len(args)}"
+            )
 
-            return values
+    def exists(self, user_key):
+        """
+        check if user_key exists
+        eg. request.user.session.exists("foo")
+
+        return True/False
+        """
+
+        redis_key = self.redis_key(user_key)
+        return self.r.exists(redis_key) == 1
 
 
 # FIXME this isn't used - can be removed?
@@ -105,23 +106,12 @@ class RedisSessionMiddleware:
     async def on_startup(self, data):
         """
         initalize Redis connection
+
+        get settings from app.settings.REDIS_CONNECTION
         """
 
         settings = data.server.settings
 
-        # FIXME how to set Redis connection settings?
-        # there are many many kwargs (https://redis.readthedocs.io/en/latest/connections.html)
-        # FIXME maybe settings should be a dict instead
-
-        # FIXME remove this
-        # logger.debug(f"{settings.REDIS_USER=}")
-        # logger.debug(f"{settings.REDIS_PASSWORD=}")
-
-        # common setting, using default args (ie. host="localhost", port=6379, db=0)
-        # self.redis_session = RedisSession()
-
-        # FIXME suggested way to pass & use Redis connection settings
-        # logger.debug(f"{settings.REDIS_CONNECTION=}")
         self.redis_session = RedisSession(**settings.REDIS_CONNECTION)
 
         # initalize this here, but to be set in handle_request()
