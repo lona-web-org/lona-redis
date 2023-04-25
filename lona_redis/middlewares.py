@@ -15,11 +15,17 @@ class RedisSession:
 
         https://redis.readthedocs.io/en/latest/#quickly-connecting-to-redis
 
+        kwargs is app.settings.REDIS_CONNECTION
+
         pass through all kwargs to redis-py
         kwargs:
             https://redis.readthedocs.io/en/latest/connections.html
         """
 
+        # called from RedisSessionMiddleware.on_startup()
+
+        # .r is available by user for direct access to redis-py commands
+        # eg. all_keys = request.user.session.r.keys()
         self.r = redis.Redis(**kwargs)
 
     def redis_key(self, user_key):
@@ -34,7 +40,7 @@ class RedisSession:
     def set(self, *args, **kwargs):
         """
         user should call this to easily set values
-            eg. request.user.session.set("foo",123)
+            eg. request.user.session.set("foo", 123)
         pickle all values so that Redis can store any pickle-able Python value
 
         pass through all kwargs to redis-py .set()
@@ -45,7 +51,6 @@ class RedisSession:
         if len(args) == 2:
             redis_key = self.redis_key(args[0])
             value = pickle.dumps(args[1])
-
             self.r.set(redis_key, value, **kwargs)
 
         else:
@@ -62,6 +67,9 @@ class RedisSession:
         un-pickle all values that were retrieved from Redis
 
         if key does not exist, return None
+
+        emulate Redis get()
+            https://redis.readthedocs.io/en/latest/commands.html#redis.commands.core.CoreCommands.get
         """
 
         if len(args) == 1:
@@ -85,6 +93,11 @@ class RedisSession:
         eg. request.user.session.exists("foo")
 
         return True/False
+
+        as compared to:
+            https://redis.readthedocs.io/en/latest/commands.html#redis.commands.core.CoreCommands.exists
+
+        only accept 1 argument, return True/False
         """
 
         redis_key = self.redis_key(user_key)
@@ -127,7 +140,10 @@ class RedisSessionMiddleware:
     #    return data
 
     def handle_request(self, data):
+        # server = data.server
+        # connection = data.connection
         request = data.request
+        # view = data.view
 
         # set self.user_request_session_key to request.user.session_key
         # so that subsequent calls by the user to
@@ -136,6 +152,11 @@ class RedisSessionMiddleware:
         # will have request.user.session_key available
         # we NEED this so that each Redis key is unique to request.user.session_key
         self.redis_session.user_request_session_key = request.user.session_key
+
+        # eg. user will call request.user.session.get()
+        # request.user.session is set to self.redis_session
+        #   which is initalised to RedisSession(**settings.REDIS_CONNECTION)
+        #       where self.r = redis.Redis(**kwargs), kwargs=settings.REDIS_CONNECTION
         request.user.session = self.redis_session
 
         return data
