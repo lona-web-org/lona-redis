@@ -103,6 +103,24 @@ class RedisSession:
         redis_key = self.redis_key(user_key)
         return self.r.exists(redis_key) == 1
 
+    def delete(self, user_key):
+        """
+        delete user_key
+        eg. request.user.session.delete("foo")
+
+        return
+            True if key existed and was deleted
+            False otherwise
+
+        as compared to:
+            https://redis.readthedocs.io/en/latest/commands.html#redis.commands.core.CoreCommands.delete
+
+        only accept 1 argument, return True/False
+        """
+
+        redis_key = self.redis_key(user_key)
+        return self.r.delete(redis_key) == 1
+
 
 # FIXME this isn't used - can be removed?
 # class RedisUser:

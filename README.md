@@ -34,10 +34,6 @@ docker run -p 6379:6379 -it redis:latest --requirepass "abcd1234"
 # without password
 docker run -p 6379:6379 -it redis:latest
 ```
-or (https://developer.redis.com/create/docker/redis-on-docker/)
-```
-docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest
-```
 
 ## Example lona script
 ```python
@@ -57,14 +53,12 @@ class Index(View):
     def handle_request(self, request):
         session = request.user.session
 
-        # set key, value
-        session.set("foo", 123)
-
-        # returns True
-        session.exists("foo")
-
-        # given key, get value
-        foo = session.get("foo")
+        session.set("foo", 123) # set key, value
+        session.exists("foo") # returns True
+        foo = session.get("foo") # given key, get value
+        session.delete("foo") # returns True
+        session.delete("foo") # returns False, "foo" was already deleted
+        session.delete("bar") # returns False, "bar" doesn't exist
 
         return HTML(
             H1("Hello World"),
@@ -91,16 +85,14 @@ session.set(
 )
 ```
 ## Store key-values that expire
-Arguments are passed through to Redis set() command
+All options are passed through to Redis set() command
 
-All parameters are available in lona-redis
-
-(https://redis.readthedocs.io/en/latest/commands.html#redis.commands.core.CoreCommands.set)
+https://redis.readthedocs.io/en/latest/commands.html#redis.commands.core.CoreCommands.set
 ```python
 # "foo" will expire in 5 seconds
 session.set("foo", 123, ex=5)
 ```
-### Using Redis commands directly
+## Use Redis commands directly
 **Always access the key with session.redis_key()**
 
 ```python

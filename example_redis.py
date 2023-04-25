@@ -48,6 +48,11 @@ class Index(View):
         logger.debug(f"{session.get('foo')=}")
         logger.debug(f"{session.get('bar')=}")
 
+        # NOTE delete
+        logger.debug(f"{session.delete('foo')=}")
+        logger.debug(f"{session.delete('foo')=}")
+        logger.debug(f"{session.delete('bar')=}")
+
         # NOTE store various types of values
         session.set("str_var", "hello world")
         session.set("list_var", [1, 2.222, "hello world"])
@@ -96,8 +101,8 @@ class Index(View):
         # NOTE just an example, DON'T DO THIS
         # should always use session.redis_key()
         # Otherwise another session will overwrite this key
-        session.r.set("myKey", "thevalueofmykey")
-        myKey = session.r.get("myKey")
+        # session.r.set("myKey", "thevalueofmykey")
+        # myKey = session.r.get("myKey")
 
         # NOTE Set the value of key name to value if key doesn’t exist
         session.r.setnx(session.redis_key("count"), 1)
