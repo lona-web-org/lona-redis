@@ -7,7 +7,7 @@
 
 ## Installation
 
-lona-picocss can be installed using pip
+lona-redis can be installed using pip
 
 ```
 pip install lona-redis
